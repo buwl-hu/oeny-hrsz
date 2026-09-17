@@ -26,7 +26,7 @@ class Address
 
     public function __construct(
         protected readonly int     $id,
-        protected readonly ?string $district_prefix,
+        protected readonly ?string $district_prefix = null,
         ?string                    $address = null
     )
     {
@@ -130,7 +130,9 @@ class Address
             );
         }
 
-        if (is_null($this->address)) $this->address = (($data['addresses'] ?? [])[0] ?? [])['address'] ?? null;
+        if (is_null($this->address)) {
+            $this->address = ((($data['addresses'] ?? [])[0] ?? [])['address'] ?? [])['address'] ?? null;
+        }
 
         $this->details_loaded = true;
     }
