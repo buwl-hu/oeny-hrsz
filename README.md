@@ -7,11 +7,31 @@ Lightweight PHP 8.3+ client for the publicly accessible endpoints used by the O�
 ## Installation
 
 ```bash
-composer require buwl-openai/oeny-hrsz
+composer require buwl-hu/oeny-hrsz
 ```
 
 ## Basic usage
 
+For the simplest use case, LotNumberResolver can resolve a lot number directly from a locality and address:
+```php
+use BuwlOpenAI\OenyHrsz\Service\LotNumberResolver;
+
+$resolver = new LotNumberResolver();
+
+$lotNumber = $resolver->resolve('Gyöngyös', 'Egri út 6');
+
+echo $lotNumber; // 1900/3
+```
+
+For a sub-parcel, provide the floor and/or door number:
+```php
+$lotNumber = $resolver->resolve('Gyöngyös', 'Egri út 6', floor: 5, door: 34);
+
+echo $lotNumber; // e.g. 2613/A/35
+```
+The resolver performs the required locality, address and sub-parcel lookups automatically.
+
+For lower-level access to the API entities and repositories:
 ```php
 use BuwlOpenAI\OenyHrsz\Repository\AddressRepository;
 use BuwlOpenAI\OenyHrsz\Repository\LocalityRepository;
@@ -43,7 +63,7 @@ use BuwlOpenAI\OenyHrsz\Cache\ArrayCache;
 use BuwlOpenAI\OenyHrsz\Repository\AddressRepository;
 
 $cache = new ArrayCache();
-$addresses = new AddressRepository(cache: $cache, cacheTtl: 3600);
+$addresses = new AddressRepository(cache: $cache, cache_ttl: 3600);
 ```
 
 Implement `CacheInterface` to connect Redis, Symfony Cache, PSR-16, WordPress transients, etc.
