@@ -46,4 +46,40 @@ class AddressTest extends TestCase
         self::assertSame(['x' => 716190.25, 'y' => 271183.34375], $address->getPoint());
         self::assertSame(1, $http->calls);
     }
+
+    public function testAddressIsHydratedFromNestedAddressData(): void
+    {
+        $http = new class implements HttpClientInterface {
+            public function get(string $url, array $query = []): array
+            {
+                return [
+                    'point' => null,
+                    'boundingBox' => null,
+                    'outline' => null,
+                    'settlement' => null,
+                    'addresses' => [
+                        [
+                            'address' => [
+                                'id' => 1,
+                                'districtPrefix' => null,
+                                'address' => 'Egri út 6',
+                            ],
+                        ],
+                    ],
+                    'lotNumber' => '1900/3',
+                    'layment' => 'Belterület',
+                ];
+            }
+        };
+
+        $repository = new AddressRepository($http, new ArrayCache());
+
+        $address = (new Address(
+            1482741,
+            null,
+            null
+        ))->attachRepository($repository);
+
+        self::assertSame('Egri út 6', $address->getAddress());
+    }
 }
