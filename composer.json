@@ -1,6 +1,5 @@
 {
   "name": "buwl-hu/oeny-hrsz",
-  "version": "1.0.0",
   "description": "Lightweight PHP 8.3+ client for the publicly accessible OÉNY HRSZ kereső endpoints.",
   "type": "library",
   "license": "MIT",
