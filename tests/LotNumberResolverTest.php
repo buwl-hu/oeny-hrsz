@@ -52,7 +52,7 @@ class LotNumberResolverTest extends TestCase
 
         self::assertSame(
             '1900/3/A/33',
-            $resolver->resolve('Gyöngyös', 'Egri út 6', 1, 3)
+            $resolver->resolve('Gyöngyös', 'Egri út 6', 1, '3')
         );
     }
 
@@ -195,7 +195,7 @@ class LotNumberResolverTest extends TestCase
         $addressRepository
             ->expects(self::once())
             ->method('getSubParcels')
-            ->with(1482741)
+            ->with(1482741, $address)
             ->willReturn([]);
 
         $resolver = new LotNumberResolver(
@@ -205,7 +205,7 @@ class LotNumberResolverTest extends TestCase
 
         $this->expectException(SubParcelNotFoundException::class);
 
-        $resolver->resolve('Gyöngyös', 'Egri út 6', 2, 13);
+        $resolver->resolve('Gyöngyös', 'Egri út 6', 2, '13');
     }
 
     public function testThrowsWhenMultipleSubParcelsAreFound(): void
@@ -229,10 +229,10 @@ class LotNumberResolverTest extends TestCase
         $addressRepository
             ->expects(self::once())
             ->method('getSubParcels')
-            ->with(1482741)
+            ->with(1482741, $address)
             ->willReturn([
-                new SubParcel('2613/A/1', (int)'földszint', (int)'1', (int)'5'),
-                new SubParcel('2613/A/2', (int)'földszint', (int)'1', (int)'5'),
+                new SubParcel('2613/A/1', '5', null, null, (int)'földszint', '1', $address),
+                new SubParcel('2613/A/2', '5', null, null, (int)'földszint', '1', $address),
             ]);
 
         $resolver = new LotNumberResolver(
@@ -245,10 +245,10 @@ class LotNumberResolverTest extends TestCase
             'Multiple sub-parcels were found for address "Egri út 6" with the specified criteria.'
         );
 
-        $resolver->resolve('Gyöngyös', 'Egri út 6', 0, 1);
+        $resolver->resolve('Gyöngyös', 'Egri út 6', 0, '1');
     }
 
-    protected function getHttp()
+    protected function getHttp(): HttpClientInterface
     {
         return new class implements HttpClientInterface {
             public function get(string $url, array $query = []): array
@@ -302,5 +302,138 @@ class LotNumberResolverTest extends TestCase
                 };
             }
         };
+    }
+
+    public function testResolvesSubParcelByBuilding(): void
+    {
+        $locality = new Locality('05236', 'Gyöngyös');
+        $address = new Address(1482741, '', 'Egri út 6');
+
+        $addressRepository = $this->createMock(AddressRepository::class);
+        $localityRepository = $this->createMock(LocalityRepository::class);
+
+        $localityRepository
+            ->method('search')
+            ->willReturn([$locality]);
+
+        $addressRepository
+            ->method('search')
+            ->willReturn([$address]);
+
+        $address->attachRepository($addressRepository);
+
+        $addressRepository
+            ->expects(self::once())
+            ->method('getSubParcels')
+            ->with(1482741, $address)
+            ->willReturn([
+                new SubParcel('1900/3/A/29', '48', 'A', null, 0, '1', $address),
+                new SubParcel('1900/3/B/29', '48', 'B', null, 0, '1', $address),
+            ]);
+
+        $resolver = new LotNumberResolver(
+            $localityRepository,
+            $addressRepository
+        );
+
+        self::assertSame(
+            '1900/3/A/29',
+            $resolver->resolve(
+                'Gyöngyös',
+                'Egri út 6',
+                floor: 0,
+                door: '1',
+                building: 'A'
+            )
+        );
+    }
+
+    public function testResolvesSubParcelByBuildingAndStaircase(): void
+    {
+        $locality = new Locality('05236', 'Gyöngyös');
+        $address = new Address(1482741, '', 'Egri út 6');
+
+        $addressRepository = $this->createMock(AddressRepository::class);
+        $localityRepository = $this->createMock(LocalityRepository::class);
+
+        $localityRepository
+            ->method('search')
+            ->willReturn([$locality]);
+
+        $addressRepository
+            ->method('search')
+            ->willReturn([$address]);
+
+        $address->attachRepository($addressRepository);
+
+        $addressRepository
+            ->expects(self::once())
+            ->method('getSubParcels')
+            ->with(1482741, $address)
+            ->willReturn([
+                new SubParcel('1900/3/A/29', '48', 'A', '1', 0, '2', $address),
+                new SubParcel('1900/3/A/30', '48', 'A', '2', 0, '2', $address),
+            ]);
+
+        $resolver = new LotNumberResolver(
+            $localityRepository,
+            $addressRepository
+        );
+
+        self::assertSame(
+            '1900/3/A/29',
+            $resolver->resolve(
+                'Gyöngyös',
+                'Egri út 6',
+                floor: 0,
+                door: '2',
+                building: 'A',
+                staircase: '1'
+            )
+        );
+    }
+
+    public function testResolvesSubParcelOnBasementFloor(): void
+    {
+        $locality = new Locality('05236', 'Gyöngyös');
+        $address = new Address(1482741, '', 'Egri út 6');
+
+        $addressRepository = $this->createMock(AddressRepository::class);
+        $localityRepository = $this->createMock(LocalityRepository::class);
+
+        $localityRepository
+            ->method('search')
+            ->willReturn([$locality]);
+
+        $addressRepository
+            ->method('search')
+            ->willReturn([$address]);
+
+        $address->attachRepository($addressRepository);
+
+        $addressRepository
+            ->expects(self::once())
+            ->method('getSubParcels')
+            ->with(1482741, $address)
+            ->willReturn([
+                new SubParcel('1900/3/A/20', '48', 'A', null, -1, '1', $address),
+                new SubParcel('1900/3/A/29', '48', 'A', null, 0, '1', $address),
+            ]);
+
+        $resolver = new LotNumberResolver(
+            $localityRepository,
+            $addressRepository
+        );
+
+        self::assertSame(
+            '1900/3/A/20',
+            $resolver->resolve(
+                'Gyöngyös',
+                'Egri út 6',
+                floor: -1,
+                door: '1',
+                building: 'A'
+            )
+        );
     }
 }

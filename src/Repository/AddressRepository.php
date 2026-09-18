@@ -47,14 +47,14 @@ class AddressRepository
     /**
      * @return SubParcel[]
      */
-    public function getSubParcels(int $id): array
+    public function getSubParcels(int $id, Address $address): array
     {
         $key = 'addresses.sub-parcels.' . $id;
         $cached = $this->cache->get($key);
-        if (is_array($cached)) return self::makeSubParcels($cached);
+        if (is_array($cached)) return self::makeSubParcels($cached, $address);
         $data = $this->http->get($this->base_url . '/sub-parcels', ['id' => $id]);
         $this->cache->set($key, $data, $this->cache_ttl);
-        return self::makeSubParcels($data);
+        return self::makeSubParcels($data, $address);
     }
 
     /** @return string[] */
@@ -82,8 +82,8 @@ class AddressRepository
      * @param array<int,array<string,mixed>> $items
      * @return SubParcel[]
      */
-    protected function makeSubParcels(array $items): array
+    protected function makeSubParcels(array $items, Address $address): array
     {
-        return array_map(static fn(array $item): SubParcel => SubParcel::fromArray($item), $items);
+        return array_map(static fn(array $item): SubParcel => SubParcel::fromArray($item, $address), $items);
     }
 }

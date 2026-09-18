@@ -101,7 +101,7 @@ class Address
     /** @return SubParcel[] */
     public function getSubParcels(): array
     {
-        if ($this->sub_parcels === null) $this->sub_parcels = $this->repository?->getSubParcels($this->id) ?? [];
+        if ($this->sub_parcels === null) $this->sub_parcels = $this->repository?->getSubParcels($this->id, $this) ?? [];
         return $this->sub_parcels;
     }
 
