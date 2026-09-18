@@ -72,8 +72,8 @@ class SubParcel
             }
         }
 
-        if (!empty($floor = mb_strtolower(trim($data['floor'])))) {
-            $floor_number = (int)match ($floor) {
+        if (!empty($floor = $data['floor'])) {
+            $floor_number = (int)match (mb_strtolower(trim($floor))) {
                 'pinceszint' => -1,
                 'földszint' => 0,
                 default => $floor
